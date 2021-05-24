@@ -338,6 +338,7 @@ process piranha_peak_call {
 //Step 8b - Motif (DREME) - Oisin attempt
 
 process piranha_motif_dreme {
+
         tag "$name"
         publishDir "${params.outdir}/piranha_motif", mode: 'copy'
 
