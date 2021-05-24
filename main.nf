@@ -382,5 +382,26 @@ process clipqc {
     python ${projectDir}/bin/clip_seq.py
     """
 }
+//Step 10 - MultiQC - Oisin
 
+process multiqc {
 
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
+
+    input:
+    file (multiqc_config) from ch_multiqc_config
+    file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
+    file ('fastqc/*') from fastqc_ch.collect().ifEmpty([])
+    file ('premap/*') from ch_premap_mqc.collect().ifEmpty([])
+    file ('mapped/*') from ch_align_mqc.collect().ifEmpty([])
+    path ('preseq/*') from ch_preseq_mqc.collect().ifEmpty([])
+    file ('clipqc/*') from ch_clipqc_mqc.collect().ifEmpty([])
+
+    output:
+    file "*html" into ch_multiqc_report
+
+    script:
+    """
+    multiqc .
+    """
+}
