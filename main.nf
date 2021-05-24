@@ -23,6 +23,7 @@ ch_multiqc_config = Channel.value(params.multiqc_config)
 ch_output_docs = Channel.value(params.output_docs)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_fasta_star = Channel.value(params.refgenome_path)
+ch_fasta_dreme_piranha = Channel.value(params.refgenome_path)
 
 
 
@@ -57,7 +58,7 @@ process generate_fai{
    	path(ref) from ch_ref_fai
 
    	output:
-   	path("*.fai") into (ch_fai_crosslinks, ch_fai_icount, ch_fai_icount_motif, ch_fai_paraclu_motif, ch_fai_pureclip_motif, ch_fai_piranha_motif)
+   	path("*.fai") into (ch_fai_crosslinks, ch_fai_piranha_motif)
 
     	script:
     	"""
@@ -336,29 +337,28 @@ process piranha_peak_call {
 
 //Step 8b - Motif (DREME) - Oisin attempt
 
-//process piranha_motif_dreme {
+process piranha_motif_dreme {
+        tag "$name"
+        publishDir "${params.outdir}/piranha_motif", mode: 'copy'
 
-        //tag "$name"
-        //publishDir "${params.outdir}/piranha_motif", mode: 'copy'
+        input:
+        tuple val(name), path(peaks) from ch_peaks_piranha
+        path(fasta) from ch_fasta_dreme_piranha.collect()
+        path(fai) from ch_fai_piranha_motif.collect()
 
-        //input:
-        //tuple val(name), path(peaks) from ch_peaks_piranha
-        //path(fasta) from ch_fasta_dreme_piranha.collect()
-        //path(fai) from ch_fai_piranha_motif.collect()
+        output:
+         tuple val(name), path("${name}_dreme/*") into ch_motif_dreme_piranha
 
-        //output:
-        //tuple val(name), path("${name}_dreme/*") into ch_motif_dreme_piranha
-
-        //script:
-        //motif_sample = 1000
-        //"""
-        //pigz -d -c $peaks | awk '{OFS="\t"}{if(\$6 == "+") print \$1, \$2, \$2+1, \$4, \$5, \$6; else print \$1, \$3-1, \$3, \$4, \$5, \$6}' | \\
-        //bedtools slop -s -l 20 -r 20 -i /dev/stdin -g $fai | \\
-        //shuf -n $motif_sample > resized_peaks.bed
-        //bedtools getfasta -fi $fasta -bed resized_peaks.bed -fo resized_peaks.fasta
-        //dreme -norc -o ${name}_dreme -p resized_peaks.fasta
-        //"""
-//}
+        script:
+        motif_sample = params.motif_sample
+        """
+        pigz -d -c $peaks | awk '{OFS="\t"}{if(\$6 == "+") print \$1, \$2, \$2+1, \$4, \$5, \$6; else print \$1, \$3-1, \$3, \$4, \$5, \$6}' | \\
+        bedtools slop -s -l 20 -r 20 -i /dev/stdin -g $fai | \\
+        shuf -n $motif_sample > resized_peaks.bed
+        bedtools getfasta -fi $fasta -bed resized_peaks.bed -fo resized_peaks.fasta
+        dreme -norc -o ${name}_dreme -p resized_peaks.fasta
+        """
+ }
 
 //Step 9 - QC plots - Oisin
 
