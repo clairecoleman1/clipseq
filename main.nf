@@ -332,9 +332,6 @@ process piranha_peak_call {
         """
 }
 
-
-//NOT SURE HOW TO DO DREME
-
 //Step 8b - Motif (DREME) - Claire 
 
 process piranha_motif_dreme {
